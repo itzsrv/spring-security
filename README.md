@@ -128,7 +128,7 @@ If a new Store Manager comes up, or if few Store Clerks are hired then each one 
 
 This is where you create the concept of Role.
 
-### Roles
+## Roles
 
 Role is like a group of authorities, that are usually assigned together. 
 - role_store_clerk
@@ -138,6 +138,100 @@ Role is like a group of authorities, that are usually assigned together.
 Roles are more coarse-grained permissions, unlike that fine grained permissions that Authorities have. 
 
 In Spring Security, both these concepts of Roles and Authority are used interchangeably.
+
+
+Add Spring Security to your application by adding the starter security to maven pom.xml
+
+spring-boot-starter-security
+
+/login
+
+./login?error
+
+How??
+
+
+The answer to this is by using,
+
+## Filters
+
+Filters are very basic concept with Servlet Application. And Spring Boot and Spring Security and all of these java web application are, Servlets Application afterall.
+
+So you have basic servlet technology, working underneath to provide all this kind of rich funtionality, and you have all these frameworks built on top this, so you dont have to deal with servlet layer. But what's actually doing all the job are those servlet technology.
+And filters are one of the core concepts associated with Servlet technologies. 
+
+Filters stand right in the middle and they intercept every request, and this gives you opportunity to do something with every request. (cross cutting functionality)
+- log every request
+- check every request if header is there or not
+
+--> Spring Security Filter
+
+
+### Spring Security default behaviour
+
+- Adds mandatory authentication for all(except few like error pages) urls (by default without any url)
+- Adds a login form
+- Handles login error
+
+with default user 'user' and password 'random passwords'
+
+Overwrite the default user and password by adding below config in applicaion.properties file
+
+spring.security.user.name=foo
+spring.security.user.password=bar
+
+
+### How to configure Authentication using Spring Security
+
+The way to configure Authentication in Spring Security is by affecting what's called is Authentication Manager.
+
+It manages the authentication in Spring Security Application. It has a mehtod called authenticate(). That either returns a successful authentication or an exception that I can not authenticate.
+
+Authentication Manager is what does the authentication. Now, how do you affect it?
+The way to affect it is not by creating your own Authentication Manager, but instead to configure what Authentication Manager does using a builder pattern, AuthenticationManagerBuilder.
+
+This is a two step process:
+1. get hold of AuthenticationManagerBuilder
+1. set the configuration on it
+
+so, you can imagine the interaction with AuthenticationManagerBuilder being that configuration.
+
+While dealing with AuthenticationManagerBuilder, the first thing it's going to ask you is,
+- What type of authentication do you want?
+suppose you say, inmemory authentication
+- Ok, tell me then what's the username, password and the role of your inmemory users are?
+you give your <userinfo>, (it could be one or multiple users)
+
+once you have done this, once you have configured AuthenticationManagerBuilder with these properties, you can imagine, a new AuthenticationManager being created somehow which has the values that you want. so you are not directly dealing with am, you are dealing with AuthenticationManagerBuilder.
+
+How do you get hold of AuthenticationManagerBuilder?
+The way to do is by leveraging a hook that is already available in the Spring Security App, the thing is, in Spring Security App, there is a class that's sitting there which has a method called configure and it takes in as an argument, the AuthenticationManagerBuilder and the spring security framework calls that configure method and passes in the authentication manager builder. the reason that class is there so that it gives the developers an opportunity to extend the class, override the configure method and do the configuration that you want. If you dont extend this class and override the method, the default configuration happens. However, if you were to just extend this class and override this method, now you have the ability to write the method which takes the AuthenticationManagerBuilder as an argument, and once you put this in code, spring security is going to call your configured method and pass the AuthenticationManagerBuilder. Now that's an opportunity for you to take AuthenticationManagerBuilder instance and do this interaction that we talked about. 
+
+
+### How to configure authorization in Spring Security
+
+We will learn to enable or disable access to api depending upon who the logged in user is. 
+
+You can configure spring security authorization to do a gazzilion different things. But we will learn here the way to configure authorization.
+
+The way to achieve authorization is by using an Object of type HttpSecurity. HttpSecurity lets you configure the paths and access restrictions.
+
+How do you get hold of this object HttpSecurity on which you put your Authorization configuration? 
+by using the WebSecurityConfigurerAdapter.
+
+most restrictive to least restrictive
+
+### how does Spring Security Authentication work?
+
+
+
+
+
+
+
+
+
+
 
  
 
