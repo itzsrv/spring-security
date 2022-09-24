@@ -223,16 +223,116 @@ most restrictive to least restrictive
 
 ### how does Spring Security Authentication work?
 
+1. How Spring Security bootstraps itself to even begin to do any work?
+2. How does it authenticate and decide that the user are who they say they are? 
+
+
+You don't invoke the SS, you dont call its apis, you add dependencies of SSStarter in your SpringBoot Application, and the framework starts intercepting requests right out of gate.
+
+How does it do it?
+The way spring security adds itself to the request processing is by adding filter to your app.
+
+A filter is essentially a construct in servlet application that lets you intercept request. 
+
+Say, a request is coming in that needs to be disptatched to  a certain servlet. Well, you can create a bunch of filters and say, before this request is handled by the servlets, it has to go through these filters first.  
+
+The filter has the opportunity to do any processing or manipulate the request before it goes to the servlet and infact it can stop certain requests so that they dont even reach servlet. There is usually a one to one mapping between a url and a servlet method. One url is typically handled by one servlet method. But filters can be applied to a wide range of urls, for example you can say map this filter to all URLs that start with admin/** or for example, apply this filter to all urls in this application using /**. 
+
+ So in the case of web application that's what Spring Security does. When you drop the SSStarter dependency into your spring boot app, it does the filter mapping to intercept all the requests /** and maps it to Spring Security's own filter called delegating filter proxy. 
+
+ If you are not working in a spring boot app, you'll manually need to add this filter to intercept all requests. So looking at that code will give you an idea of what's happening behind the scenes. 
+
+ ```xml
+<filter>
+    <filter-name>springSecurtiyFilterChain</filter-name>
+    <filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+</filter>
+
+<filter-mapping>
+    <filter-name>springSecurtiyFilterChain</filter-name>
+    <url-pattern>/*</url-pattern>
+</filter-mapping>
+ ```
+
+ You dont need to do this because of the default configuration when working with Spring Boot Applications in the SSStarter dependency. But if you are working in a non spring boot app, or you need to add this manually, then this is what you need to add in your web.xml.
+
+ What if, I want to add authorization to only one url of my app, the rest of the url dont need to be accessible by everyone, so there's no access control restrictions, so why should I add SS to have it intercept each and every URL. I wanted to just look at just this one URL or a set of URLs.
+
+ The reason is that for an app to be secure it has to be protected from all logon abilities and you can focus on just a handful of urls that you need authentication for. If you add SS to just one part of your application, and let other part of your application have vulnerabilities, well then your entire application is not secure.
+
+ That's the basic idea, you intercept all the requests with SS at the filter level and then you tell SS what your authentication and authorization requirements are per url. 
+
+ That way all your configuration is directly with Spring Security and you dont have to mess with filters after that, irrespective of whether you want one url in your Application to be secured by SS or multiple urls. 
+
+ DelegatingFilerProxy
+    its a catch all filter that spring security adds as a starting point is actually a delegating filter to other SS specific filters to do different things depending upon the url being requested.
+
+Irrespective of the configuration, there are around 5 or 6 filters that SS provides out of the box. One of these filter is Authentication which intercepts all Authentication Requests and initiates the authentication process. As you can imagine, there are several authorization related filters as well, and even filters to skip authorization for like static files in the web application things css or js files. 
+
+### How does Spring Security do what it does (specifically around authentication )?
+
+There is an Authentication Filter that intercepts authentication requests and initiate the process of authentication but what happens after that.
+
+Well think of authentication as an operation with inputs and outputs, 
+what are the inputs to an authentication and what are the outputs?
+
+typically the inputs are the credentials from the user who is trying to authenticate, for example userid and password
+
+the output could be a boolean, yes correct credentials true or no incorrect credentials false. But in reality, its little more than that.
+
+When the authentication is successful, the authentication process returns the Principal (the information about the logged in user).
+
+When Spring Security performs authentication, it keeps track of both, the input and the output using an object of type authentication. Autentication is an internal SS interface and the auth object meant to hold credentials before authentication. And once user is authenticated it holds the principle. You can think of auth as this data transfer object for authentication. credentials before authentication and holder of principle after the auth is successful. 
+
+What's the thing that does the actual authentication?
+There are several ways in which this can be done in spring security application, but the most common pattern you will find is by using **Providers**. 
+
+So there is something called as an authentication provider. Think of auth provider as something responsible for doing the actual authentication. So this is an interface that has a method called authenticate and you need to have implementations of this interface, implementation of this authenticate method in your application and then tell SS about it. SS will then call this authenticate method to authenticate your users. 
+
+
+AuthenticationProvider
+    authenticate()
+
+-->
+input
+Authentication Object having
+credentials
+
+
+<--
+output 
+Authentication Object having
+Principal
+
+A single application can have multiple Authentication Strategies (userid pass, oauth, ldap/sso based authentication).
+
+So as a result, an application can have multiple Authentication Providers. Each one knowing how to authenticate with a specific authentication mechanism.
+
+How do these different Authenticaton Providers work with each other?
+In order to coordinate all of them, there is a special type in Spring Security called the Authentication Manager.
+
+Authentication Manager
+    authenticate()
+
+
+There are different ways in which you can implement this AuthenticationManager, but common implementation that we are looking at here is the providere managers, Provider Pattern.
+
+Which does this kind of delegation to authentication providers depending on whichever provider supports the authentication
+
+AuthenticationProvider
+    authenticate()
+    **supports()**
+
+In order to identify, the AuthenticationProvider has to be able to lookup the identitystore. So it has access to UserDetailsService
+
+Interface UserDetails
 
 
 
+Authenticaton object is saved by AuthenticationFilter in the thread context. Well there is a security context that is associated with current thread. This Auth Object is put into Security Context in ThreadLocal object for use authorization in identifying the current principal and more.  
 
 
-
-
-
-
-
+there is also a mechanism to allow for this context to be associated with it, the session. This work is done by another filter
  
 
 
